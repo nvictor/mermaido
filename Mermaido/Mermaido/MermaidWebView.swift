@@ -10,6 +10,8 @@ import WebKit
 
 struct MermaidWebView: NSViewRepresentable {
     @Binding var diagramText: String
+    var showSequenceNumbers: Bool
+    var isDarkMode: Bool
     var onRendered: (() -> Void)?
     var onError: ((String) -> Void)?
     var onLog: ((String) -> Void)?
@@ -46,6 +48,16 @@ struct MermaidWebView: NSViewRepresentable {
     }
     
     func updateNSView(_ webView: WKWebView, context: Context) {
+        // Check if settings have changed
+        let settingsChanged = context.coordinator.showSequenceNumbers != showSequenceNumbers ||
+                            context.coordinator.isDarkMode != isDarkMode
+        
+        if settingsChanged {
+            context.coordinator.showSequenceNumbers = showSequenceNumbers
+            context.coordinator.isDarkMode = isDarkMode
+            updateMermaidConfig(webView: webView)
+        }
+        
         // Store the diagram text and render if mermaid is ready
         if diagramText != context.coordinator.pendingDiagramText {
             context.coordinator.pendingDiagramText = diagramText
@@ -241,6 +253,7 @@ struct MermaidWebView: NSViewRepresentable {
                     align-items: center;
                     background: #ffffff;
                     overflow: auto;
+                    transition: background-color 0.3s ease;
                 }
                 #mermaid-container {
                     width: 100%;
@@ -265,6 +278,45 @@ struct MermaidWebView: NSViewRepresentable {
         webView.loadHTMLString(html, baseURL: nil)
     }
     
+    private func updateMermaidConfig(webView: WKWebView) {
+        let theme = isDarkMode ? "dark" : "default"
+        let backgroundColor = isDarkMode ? "#1e1e1e" : "#ffffff"
+        let showNumbers = showSequenceNumbers ? "true" : "false"
+        
+        let updateScript = """
+        (function() {
+            if (window.mermaid) {
+                window.mermaid.initialize({
+                    startOnLoad: false,
+                    theme: '\(theme)',
+                    securityLevel: 'loose',
+                    logLevel: 'debug',
+                    sequence: {
+                        showSequenceNumbers: \(showNumbers)
+                    }
+                });
+                
+                document.body.style.backgroundColor = '\(backgroundColor)';
+                
+                // Re-render if there's a diagram
+                if (window.currentDiagramType) {
+                    const container = document.getElementById('mermaid-container');
+                    const diagramText = container.getAttribute('data-diagram-text');
+                    if (diagramText) {
+                        window.renderDiagram(diagramText);
+                    }
+                }
+            }
+        })();
+        """
+        
+        webView.evaluateJavaScript(updateScript) { _, error in
+            if let error = error {
+                self.onError?("Failed to update config: \(error.localizedDescription)")
+            }
+        }
+    }
+    
     private func setDiagram(webView: WKWebView, text: String) {
         let escapedText = text
             .replacingOccurrences(of: "\\", with: "\\\\")
@@ -272,9 +324,12 @@ struct MermaidWebView: NSViewRepresentable {
             .replacingOccurrences(of: "$", with: "\\$")
             .replacingOccurrences(of: "\n", with: "\\n")
         
-        // First check if mermaid is ready
-        let checkAndRender = """
+        // Store the diagram text in the container for re-rendering
+        let storeAndRender = """
         (function() {
+            const container = document.getElementById('mermaid-container');
+            container.setAttribute('data-diagram-text', `\(escapedText)`);
+            
             if (typeof renderDiagram === 'function' && window.mermaidReady) {
                 renderDiagram(`\(escapedText)`);
                 return 'rendering';
@@ -284,7 +339,7 @@ struct MermaidWebView: NSViewRepresentable {
         })()
         """
         
-        webView.evaluateJavaScript(checkAndRender) { result, error in
+        webView.evaluateJavaScript(storeAndRender) { result, error in
             if let error = error {
                 self.onError?("Failed to render diagram: \(error.localizedDescription)")
             }
@@ -321,6 +376,8 @@ struct MermaidWebView: NSViewRepresentable {
         var lastDiagramText: String = ""
         var pendingDiagramText: String = ""
         var pageLoaded: Bool = false
+        var showSequenceNumbers: Bool = true
+        var isDarkMode: Bool = false
         
         init(_ parent: MermaidWebView) {
             self.parent = parent

@@ -21,6 +21,8 @@ class MermaidViewModel: ObservableObject {
     @Published var step: Int = 0
     @Published var renderError: String?
     @Published var isEditing: Bool = false
+    @Published var showSequenceNumbers: Bool = true
+    @Published var isDarkMode: Bool = false
     
     private var webViewCoordinator: MermaidWebView.Coordinator?
     

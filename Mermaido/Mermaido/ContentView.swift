@@ -9,11 +9,14 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var viewModel = MermaidViewModel()
+    @State private var inspectorPresented = false
     
     var body: some View {
         ZStack {
             MermaidWebView(
                 diagramText: $viewModel.mermaidText,
+                showSequenceNumbers: viewModel.showSequenceNumbers,
+                isDarkMode: viewModel.isDarkMode,
                 onRendered: {
                     print("Diagram rendered successfully")
                 },
@@ -66,6 +69,13 @@ struct ContentView: View {
                         Label("Edit", systemImage: "pencil")
                             .labelStyle(.iconOnly)
                     }
+                    
+                    Button(action: {
+                        inspectorPresented.toggle()
+                    }) {
+                        Label("Settings", systemImage: "gearshape")
+                            .labelStyle(.iconOnly)
+                    }
                 }
                 .padding(12)
                 .background(.ultraThinMaterial)
@@ -73,6 +83,9 @@ struct ContentView: View {
                 .shadow(radius: 4)
             }
             .padding()
+        }
+        .inspector(isPresented: $inspectorPresented) {
+            DiagramSettingsInspector(viewModel: viewModel)
         }
         .sheet(isPresented: $viewModel.isEditing) {
             DiagramEditorView(viewModel: viewModel)
@@ -112,6 +125,42 @@ struct DiagramEditorView: View {
                 .padding()
         }
         .frame(minWidth: 500, minHeight: 400)
+    }
+}
+
+struct DiagramSettingsInspector: View {
+    @ObservedObject var viewModel: MermaidViewModel
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Diagram Settings")
+                .font(.headline)
+            
+            Divider()
+            
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Theme")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                Toggle("Dark Mode", isOn: $viewModel.isDarkMode)
+            }
+            
+            Divider()
+            
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Sequence Diagrams")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                Toggle("Show Sequence Numbers", isOn: $viewModel.showSequenceNumbers)
+            }
+            
+            Spacer()
+        }
+        .padding()
+        .frame(minWidth: 200)
+        .inspectorColumnWidth(min: 200, ideal: 250, max: 300)
     }
 }
 
