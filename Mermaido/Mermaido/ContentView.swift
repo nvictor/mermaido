@@ -29,6 +29,9 @@ struct ContentView: View {
                 onStepChanged: { step in
                     viewModel.step = step
                 },
+                onTotalStepsChanged: { total in
+                    viewModel.totalSteps = total
+                },
                 onCoordinatorReady: { coordinator in
                     viewModel.setWebViewCoordinator(coordinator)
                 }
@@ -52,6 +55,7 @@ struct ContentView: View {
                         Label("Next", systemImage: "chevron.right")
                             .labelStyle(.iconOnly)
                     }
+                    .disabled(viewModel.step >= viewModel.totalSteps)
                     
                     Button(action: {
                         viewModel.resetView()

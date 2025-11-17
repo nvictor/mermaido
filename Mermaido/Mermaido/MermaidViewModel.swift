@@ -19,6 +19,7 @@ class MermaidViewModel: ObservableObject {
     """
     
     @Published var step: Int = 0
+    @Published var totalSteps: Int = 0
     @Published var renderError: String?
     @Published var isEditing: Bool = false
     @Published var showSequenceNumbers: Bool = true

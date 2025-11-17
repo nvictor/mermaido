@@ -16,6 +16,7 @@ struct MermaidWebView: NSViewRepresentable {
     var onError: ((String) -> Void)?
     var onLog: ((String) -> Void)?
     var onStepChanged: ((Int) -> Void)?
+    var onTotalStepsChanged: ((Int) -> Void)?
     var onCoordinatorReady: ((Coordinator) -> Void)?
     
     func makeCoordinator() -> Coordinator {
@@ -31,6 +32,7 @@ struct MermaidWebView: NSViewRepresentable {
         userContentController.add(context.coordinator, name: "onError")
         userContentController.add(context.coordinator, name: "onLog")
         userContentController.add(context.coordinator, name: "stepChanged")
+        userContentController.add(context.coordinator, name: "totalStepsChanged")
         
         configuration.userContentController = userContentController
         
@@ -166,6 +168,7 @@ struct MermaidWebView: NSViewRepresentable {
                         }))
                         .sort((a, b) => a.number - b.number);
                     
+                    window.webkit.messageHandlers.totalStepsChanged.postMessage(window.sequenceElements.length);
                 }
                 
                 function panToStep(stepNumber) {
@@ -416,6 +419,10 @@ struct MermaidWebView: NSViewRepresentable {
             case "stepChanged":
                 if let step = message.body as? Int {
                     parent.onStepChanged?(step)
+                }
+            case "totalStepsChanged":
+                if let total = message.body as? Int {
+                    parent.onTotalStepsChanged?(total)
                 }
             default:
                 break
