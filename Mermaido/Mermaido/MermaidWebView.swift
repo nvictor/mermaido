@@ -177,33 +177,32 @@ struct MermaidWebView: NSViewRepresentable {
                     const targetElement = window.sequenceElements.find(e => e.number === stepNumber);
                     if (!targetElement) return;
 
-                    const rect = targetElement.element.getBoundingClientRect();
+                    const svg = document.querySelector('#mermaid-container svg');
+                    if (!svg) return;
                     
-                    // Simplified padding from mermaid-viewer
-                    const padding = 200;
-
-                    if(window.panInstance.smoothShowRectangle) {
-                         window.panInstance.smoothShowRectangle({
-                            ...rect.toJSON(),
-                            left: rect.left - padding,
-                            top: rect.top - padding,
-                            right: rect.right + padding,
-                            bottom: rect.bottom + padding
-                        });
-                    } else {
-                        // Fallback pan logic
-                        const svg = document.querySelector('#mermaid-container svg');
-                        if(svg) {
-                            const svgRect = svg.getBoundingClientRect();
-                            const relativeX = rect.left - svgRect.left + rect.width / 2;
-                            const relativeY = rect.top - svgRect.top + rect.height / 2;
-                            window.panInstance.smoothMoveTo(
-                                svgRect.width / 2 - relativeX,
-                                svgRect.height / 2 - relativeY
-                            );
-                        }
-                    }
-                   
+                    // Get the current transform to account for zoom
+                    const transform = window.panInstance.getTransform();
+                    const currentZoom = transform.scale;
+                    
+                    // Get the element's position in SVG coordinates
+                    const rect = targetElement.element.getBoundingClientRect();
+                    const svgRect = svg.getBoundingClientRect();
+                    const container = document.getElementById('mermaid-container');
+                    const containerRect = container.getBoundingClientRect();
+                    
+                    // Calculate the center of the target element in SVG space
+                    const elementCenterX = (rect.left + rect.width / 2 - svgRect.left) / currentZoom;
+                    const elementCenterY = (rect.top + rect.height / 2 - svgRect.top) / currentZoom;
+                    
+                    // Calculate the center of the container
+                    const containerCenterX = containerRect.width / 2;
+                    const containerCenterY = containerRect.height / 2;
+                    
+                    // Calculate the pan needed to center the element (accounting for zoom)
+                    const targetX = containerCenterX - (elementCenterX * currentZoom);
+                    const targetY = containerCenterY - (elementCenterY * currentZoom);
+                    
+                    window.panInstance.smoothMoveTo(targetX, targetY);
                 }
 
                 window.nextStep = function() {
