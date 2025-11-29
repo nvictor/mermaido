@@ -28,9 +28,19 @@ struct ContentView: View {
                 },
                 onStepChanged: { step in
                     viewModel.step = step
+                    if step == 0 {
+                        viewModel.currentStepInfo = nil
+                    }
                 },
                 onTotalStepsChanged: { total in
                     viewModel.totalSteps = total
+                },
+                onStepInfo: { from, to, message in
+                    viewModel.currentStepInfo = MermaidViewModel.StepInfo(
+                        fromActor: from,
+                        toActor: to,
+                        message: message
+                    )
                 },
                 onCoordinatorReady: { coordinator in
                     viewModel.setWebViewCoordinator(coordinator)
@@ -39,6 +49,36 @@ struct ContentView: View {
             
             VStack {
                 Spacer()
+                
+                if let stepInfo = viewModel.currentStepInfo {
+                    HStack(spacing: 8) {
+                        Text(stepInfo.fromActor)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                        
+                        Text(stepInfo.toActor)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        Text(":")
+                            .foregroundColor(.secondary)
+                        
+                        Text(stepInfo.message)
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(12)
+                    .shadow(radius: 4)
+                    .padding(.bottom, 8)
+                }
                 
                 HStack(spacing: 12) {
                     Button(action: {

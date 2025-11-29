@@ -17,6 +17,7 @@ struct MermaidWebView: NSViewRepresentable {
     var onLog: ((String) -> Void)?
     var onStepChanged: ((Int) -> Void)?
     var onTotalStepsChanged: ((Int) -> Void)?
+    var onStepInfo: ((String, String, String) -> Void)?
     var onCoordinatorReady: ((Coordinator) -> Void)?
     
     func makeCoordinator() -> Coordinator {
@@ -33,6 +34,7 @@ struct MermaidWebView: NSViewRepresentable {
         userContentController.add(context.coordinator, name: "onLog")
         userContentController.add(context.coordinator, name: "stepChanged")
         userContentController.add(context.coordinator, name: "totalStepsChanged")
+        userContentController.add(context.coordinator, name: "stepInfo")
         
         configuration.userContentController = userContentController
         
@@ -108,6 +110,7 @@ struct MermaidWebView: NSViewRepresentable {
                 window.currentDiagramType = null;
                 window.panInstance = null;
                 window.sequenceElements = [];
+                window.diagramLines = [];
                 
                 window.renderDiagram = async function(diagramText) {
                     try {
@@ -141,6 +144,7 @@ struct MermaidWebView: NSViewRepresentable {
                         }
                         
                         if (window.currentDiagramType === 'sequence') {
+                           window.diagramLines = parseSequenceDiagram(diagramText);
                            setTimeout(setupSequenceStepping, 200); // Allow SVG to render
                         }
                         
@@ -169,6 +173,42 @@ struct MermaidWebView: NSViewRepresentable {
                         .sort((a, b) => a.number - b.number);
                     
                     window.webkit.messageHandlers.totalStepsChanged.postMessage(window.sequenceElements.length);
+                }
+                
+                function parseSequenceDiagram(diagramText) {
+                    const lines = diagramText.split('\\n');
+                    const steps = [];
+                    
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        const arrowMatch = trimmed.match(/^([\\w\\s]+)(->|-->|-->>|->>)([\\w\\s]+):\\s*(.+)$/);
+                        
+                        if (arrowMatch) {
+                            steps.push({
+                                from: arrowMatch[1].trim(),
+                                to: arrowMatch[3].trim(),
+                                message: arrowMatch[4].trim()
+                            });
+                        }
+                    }
+                    
+                    return steps;
+                }
+                
+                function sendStepInfo(stepNumber) {
+                    if (stepNumber === 0 || !window.diagramLines || window.diagramLines.length === 0) {
+                        return;
+                    }
+                    
+                    const stepIndex = stepNumber - 1;
+                    if (stepIndex >= 0 && stepIndex < window.diagramLines.length) {
+                        const step = window.diagramLines[stepIndex];
+                        window.webkit.messageHandlers.stepInfo.postMessage({
+                            from: step.from,
+                            to: step.to,
+                            message: step.message
+                        });
+                    }
                 }
                 
                 function panToStep(stepNumber) {
@@ -213,6 +253,7 @@ struct MermaidWebView: NSViewRepresentable {
                         window.currentStep = nextStep;
                         panToStep(window.currentStep);
                         window.webkit.messageHandlers.stepChanged.postMessage(window.currentStep);
+                        sendStepInfo(window.currentStep);
                     }
                 };
 
@@ -227,6 +268,7 @@ struct MermaidWebView: NSViewRepresentable {
                         window.reset();
                     }
                     window.webkit.messageHandlers.stepChanged.postMessage(window.currentStep);
+                    sendStepInfo(window.currentStep);
                 };
 
                 window.reset = function() {
@@ -422,6 +464,13 @@ struct MermaidWebView: NSViewRepresentable {
             case "totalStepsChanged":
                 if let total = message.body as? Int {
                     parent.onTotalStepsChanged?(total)
+                }
+            case "stepInfo":
+                if let info = message.body as? [String: String],
+                   let from = info["from"],
+                   let to = info["to"],
+                   let msg = info["message"] {
+                    parent.onStepInfo?(from, to, msg)
                 }
             default:
                 break

@@ -65,8 +65,15 @@ class MermaidViewModel: ObservableObject {
     @Published var isEditing: Bool = false
     @Published var showSequenceNumbers: Bool = true
     @Published var isDarkMode: Bool = false
+    @Published var currentStepInfo: StepInfo?
     
     private var webViewCoordinator: MermaidWebView.Coordinator?
+    
+    struct StepInfo: Equatable {
+        let fromActor: String
+        let toActor: String
+        let message: String
+    }
     
     func setWebViewCoordinator(_ coordinator: MermaidWebView.Coordinator) {
         self.webViewCoordinator = coordinator
