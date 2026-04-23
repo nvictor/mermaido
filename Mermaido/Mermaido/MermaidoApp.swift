@@ -9,9 +9,14 @@ import SwiftUI
 
 @main
 struct MermaidoApp: App {
+    @StateObject private var updater = AppUpdater()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+        }
+        .commands {
+            CheckForUpdatesCommands(updater: updater)
         }
     }
 }
