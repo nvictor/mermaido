@@ -14,9 +14,22 @@
 		57E09E0E2ECB9AE70015FED8 /* Mermaido.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Mermaido.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		5A502500000000000000040 /* Exceptions for "Mermaido" folder in "Mermaido" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 57E09E0D2ECB9AE70015FED8 /* Mermaido */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		57E09E102ECB9AE70015FED8 /* Mermaido */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				5A502500000000000000040 /* Exceptions for "Mermaido" folder in "Mermaido" target */,
+			);
 			path = Mermaido;
 			sourceTree = "<group>";
 		};
