@@ -79,9 +79,24 @@ jobs:
 
       - name: Create DMG
         run: |
-          hdiutil create -volname "Mermaido" \
-            -srcfolder "build/Mermaido.app" \
-            -ov -format UDZO "build/Mermaido.dmg"
+          rm -rf build/dmg-staging "build/Mermaido.dmg"
+          mkdir -p build/dmg-staging
+          ditto "build/Mermaido.app" "build/dmg-staging/Mermaido.app"
+          ln -s /Applications build/dmg-staging/Applications
+          for attempt in 1 2 3; do
+            if hdiutil create -volname "Mermaido" \
+              -srcfolder "build/dmg-staging" \
+              -fs HFS+ -ov -format UDZO "$PWD/build/Mermaido.dmg"; then
+              break
+            fi
+            if [ "$attempt" = 3 ]; then
+              echo "hdiutil failed after 3 attempts" >&2
+              exit 1
+            fi
+            echo "hdiutil attempt $attempt failed, retrying"
+            sleep 5
+          done
+          ls -la "build/Mermaido.dmg"
 
       - name: Generate Sparkle appcast
         env:
